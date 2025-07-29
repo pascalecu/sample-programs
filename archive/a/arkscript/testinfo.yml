@@ -4,5 +4,5 @@ folder:
 
 container:
   image: "arkscript/stable"
-  tag: "sha-962de17"
+  tag: "latest"
   cmd: "arkscript {{ source.name }}{{ source.extension }}"
