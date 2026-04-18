@@ -7,5 +7,5 @@ folder:
 container:
   image: "esolang/cobol"
   tag: "latest"
-  build: "cobc -x {{ source.name}}{{ source.extension }}"
+  build: "cobc -F -x {{ source.name}}{{ source.extension }}"
   cmd: "./{{ source.name}}"

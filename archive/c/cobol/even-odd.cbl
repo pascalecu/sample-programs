@@ -1,20 +1,28 @@
-        IDENTIFICATION DIVISION.
-        PROGRAM-ID. EVEN-ODD.
-        DATA DIVISION.
-        WORKING-STORAGE SECTION.
-          01 CMDARGS PIC X(38).
-          01 NUM     PIC S9(30).
-        PROCEDURE DIVISION.
-           ACCEPT CMDARGS FROM COMMAND-LINE.
-           IF CMDARGS IS ALPHABETIC THEN
-              DISPLAY "Usage: please input a number"
-              STOP RUN.
-           COMPUTE NUM = FUNCTION NUMVAL(CMDARGS).
-           IF NUM IS NUMERIC THEN
-              IF FUNCTION MOD (NUM, 2) = 0 THEN
-                 DISPLAY "Even"
-              ELSE
-                 DISPLAY "Odd"
-           ELSE 
-              DISPLAY "Usage: please input a number"
-           STOP RUN.
+identification division.
+program-id. even-odd.
+
+data division.
+working-storage section.
+
+01 cmdargs pic x(38).
+01 num     pic s9(30).
+
+procedure division.
+
+main.
+    accept cmdargs from command-line
+
+    if function test-numval(cmdargs) not = 0
+        display "Usage: please input a number"
+        stop run
+    end-if
+
+    compute num = function numval(cmdargs)
+
+    if function mod(num 2) = 0
+        display "Even"
+    else
+        display "Odd"
+    end-if
+
+    stop run.
