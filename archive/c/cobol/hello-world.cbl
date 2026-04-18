@@ -1,5 +1,8 @@
-        IDENTIFICATION DIVISION.
-        PROGRAM-ID. HELLO-WORLD.
-        PROCEDURE DIVISION.
-            DISPLAY "Hello, World!"
-        STOP RUN.
+identification division.
+program-id. hello-world.
+
+procedure division.
+
+main.
+    display "Hello, World!"
+    stop run.
