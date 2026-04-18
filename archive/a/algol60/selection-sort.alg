@@ -198,7 +198,7 @@ begin
                 arr[i] := temp
             end
         end
-    end procedure selectionSort;
+    end selectionSort;
 
     integer argc, arrLen;
     integer array arr[1:100];

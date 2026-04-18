@@ -199,7 +199,7 @@ begin
 
         n := newN;
         if n > 2 then goto sortloop
-    end procedure bubbleSort;
+    end bubbleSort;
 
     integer argc, arrLen;
     integer array arr[1:100];

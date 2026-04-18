@@ -200,7 +200,7 @@ begin
 
             arr[j + 1] := temp
         end
-    end procedure insertionSort;
+    end insertionSort;
 
     integer argc, arrLen;
     integer array arr[1:100];

@@ -239,7 +239,7 @@ begin
         end swap;
 
         quickSortRec(1, arrLen)
-    end procedure quickSort;
+    end quickSort;
 
     integer argc, arrLen;
     integer array arr[1:100];
