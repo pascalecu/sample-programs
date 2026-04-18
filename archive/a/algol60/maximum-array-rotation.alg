@@ -136,44 +136,6 @@ begin
         inIntegerArray := arrLen
     end inIntegerArray;
 
-    comment Output integer without space. This is needed since ALGOL60
-        'outinteger' automatically adds a space after the integer.
-        Source: 'outinteger' function source code in Appendix 2 of
-        https://www.algol60.org/reports/algol60_mr.pdf;
-    procedure outIntegerNoSpace(x);
-    value x;
-    integer x;
-    begin
-        procedure digits(x);
-        value x;
-        integer x;
-        begin
-            integer d;
-            d := x % 10;
-            x := x - 10 * d;
-            if d != 0 then digits(d);
-            outchar(1, "0123456789", iabs(x) + 1)
-        end digits;
-        if x < 0 then outstring(1, "-");
-        digits(x)
-    end outIntegerNoSpace;
-
-    comment Output integer array;
-    procedure outIntegerArray(arr, arrLen);
-    value arrLen;
-    integer array arr;
-    integer arrLen;
-    begin
-        integer i;
-        for i := 1 step 1 until arrLen do
-        begin
-            if i > 1 then outstring(1, ", ");
-            outIntegerNoSpace(arr[i])
-        end;
-
-        if arrLen > 0 then outstring(1, "\n")
-    end outIntegerArray;
-
     integer procedure maximumArrayRotation(arr, n);
     value n;
     integer array arr;
