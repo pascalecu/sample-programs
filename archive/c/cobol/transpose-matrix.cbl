@@ -59,11 +59,12 @@ get-and-validate-input.
 parse-matrix.
     move 1 to i
     move 1 to j
+    move 1 to curr-pos
 
     perform until i > num-rows
 
         unstring matrix-raw
-            delimited by all "," or space
+            delimited by ", "
             into val(i, j)
             pointer curr-pos
         end-unstring
