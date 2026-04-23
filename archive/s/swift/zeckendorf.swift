@@ -34,4 +34,4 @@ guard CommandLine.argc == 2,
     exit(0)
 }
 
-print(zeckendorf(16383))
+print(zeckendorf(n))
