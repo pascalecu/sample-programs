@@ -1,0 +1,1 @@
+program-id.quine.data division.linkage section. 78 c value"procedure division.display'program-id.quine.data division.linkage section. 78 c value'x'22'c x'222e'c.".procedure division.display'program-id.quine.data division.linkage section. 78 c value'x'22'c x'222e'c.
