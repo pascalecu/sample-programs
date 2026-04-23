@@ -38,8 +38,13 @@ Module RomanNumeral
     End Function
 
     Sub Main(args As String())
-        If args.Length = 0 OrElse String.IsNullOrWhiteSpace(args(0)) Then
+        If args.Length = 0 Then
             Console.WriteLine("Usage: please provide a string of roman numerals")
+            Return
+        End If
+
+        If args(0) = "" Then
+            Console.WriteLine(0)
             Return
         End If
 
