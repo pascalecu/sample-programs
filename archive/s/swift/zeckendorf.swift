@@ -1,6 +1,8 @@
 import Foundation
 
 func fibs(upTo limit: Int) -> [Int] {
+    guard limit >= 1 else { return [] }
+
     var result = [1, 2]
     while true {
         let next = result[result.count - 1] + result[result.count - 2]
@@ -13,9 +15,9 @@ func fibs(upTo limit: Int) -> [Int] {
 func zeckendorf(_ n: Int) -> String {
     guard n > 0 else { return "" }
 
-    let fibs = fibs(upTo: n).reversed()
+    let fibsList = fibs(upTo: n).reversed()
 
-    let result = fibs.reduce(into: (remaining: n, out: [Int]())) { acc, f in
+    let result = fibsList.reduce(into: (remaining: n, out: [Int]())) { acc, f in
         if f <= acc.remaining {
             acc.out.append(f)
             acc.remaining -= f
