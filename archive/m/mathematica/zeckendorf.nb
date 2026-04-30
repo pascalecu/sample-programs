@@ -1,0 +1,24 @@
+ClearAll[zeckendorfMain];
+
+nf[f_] := Fibonacci @ Floor @ Log[GoldenRatio, f * Sqrt[5] + 1/2];
+
+zeckendorfMain[] := "Usage: please input a non-negative integer";
+zeckendorfMain[Except[_String? (StringMatchQ[#, DigitCharacter ..] &)]] := 
+  "Usage: please input a non-negative integer";
+
+zeckendorfMain["0"] = "";
+
+zeckendorfMain[nStr_] := StringRiffle[
+  Abs @ Differences @ NestWhileList[# - nf[#] &, FromDigits[nStr], # > 0 &],
+  ", "
+];
+
+(* Valid cases *)
+Scan[Print, zeckendorfMain /@ {"0", "55", "67", "10946", "16383"}]
+
+(* Invalid cases *)
+zeckendorfMain[]
+zeckendorfMain[""]
+zeckendorfMain["bad"]
+zeckendorfMain["-2"]
+zeckendorfMain["2.6"]
