@@ -9,7 +9,7 @@ extension StringProtocol {
 }
 
 func parseList(_ input: String?) -> [Int]? {
-    guard let input, !input.isEmpty else { return nil }
+    guard let input = input, !input.isEmpty else { return nil }
 
     let values =
         input
