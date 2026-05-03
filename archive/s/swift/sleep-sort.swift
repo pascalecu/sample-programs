@@ -25,7 +25,6 @@ func parseIntegers(from args: [String]) -> [Int]? {
 
 func sleepSorted(_ numbers: [Int]) -> [Int] {
     let group = DispatchGroup()
-    let queue = DispatchQueue(label: "sleep-sort", attributes: .concurrent)
     let lock = NSLock()
 
     var result: [Int] = []
@@ -35,10 +34,10 @@ func sleepSorted(_ numbers: [Int]) -> [Int] {
 
     for number in numbers {
         group.enter()
-        queue.async {
-            let delay = UInt32((number + offset) * 2_000_000)
-            usleep(delay)
 
+        let delayMilliseconds = (number + offset) * 1000
+
+        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(delayMilliseconds)) {
             lock.lock()
             result.append(number)
             lock.unlock()
