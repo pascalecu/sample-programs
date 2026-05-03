@@ -29,10 +29,10 @@ func convexHull(from points: [Point]) -> [Point] {
 
     let sorted = points.sorted()
 
-    func buildHalfHull(_ points: some Sequence<Point>) -> [Point] {
+    func buildHalfHull(_ points: [Point]) -> [Point] {
         var hull: [Point] = []
-        hull.reserveCapacity(points.underestimatedCount)
-
+        hull.reserveCapacity(points.count)
+        
         for p in points {
             while hull.count >= 2
                 && orientation(hull[hull.count - 2], hull[hull.count - 1], p)
