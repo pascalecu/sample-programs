@@ -23,27 +23,32 @@ func parseIntegers(from args: [String]) -> [Int]? {
     return values
 }
 
-extension Array where Element == Int {
-    func sleepSorted() async -> [Element] {
-        let minValue = self.min() ?? 0
-        let offset = minValue < 0 ? abs(minValue) : 0
+func sleepSorted(_ numbers: [Int]) -> [Int] {
+    let group = DispatchGroup()
+    let queue = DispatchQueue(label: "sleep-sort", attributes: .concurrent)
+    let lock = NSLock()
 
-        return await withTaskGroup(of: Int.self) { group in
-            for element in self {
-                group.addTask {
-                    let nanoseconds = UInt64(element + offset) * 1_000_000
-                    try? await Task.sleep(nanoseconds: nanoseconds)
-                    return element
-                }
-            }
+    var result: [Int] = []
 
-            var result: [Element] = []
-            for await sortedElement in group {
-                result.append(sortedElement)
-            }
-            return result
+    let minValue = numbers.min() ?? 0
+    let offset = minValue < 0 ? abs(minValue) : 0
+
+    for number in numbers {
+        group.enter()
+        queue.async {
+            let delay = UInt32(number + offset)
+            sleep(delay)
+
+            lock.lock()
+            result.append(number)
+            lock.unlock()
+
+            group.leave()
         }
     }
+
+    group.wait()
+    return result
 }
 
 guard let numbers = parseIntegers(from: CommandLine.arguments) else {
@@ -51,5 +56,5 @@ guard let numbers = parseIntegers(from: CommandLine.arguments) else {
     exit(1)
 }
 
-let sorted = await numbers.sleepSorted()
+let sorted = sleepSorted(numbers)
 print(sorted.map(String.init).joined(separator: ", "))
