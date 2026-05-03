@@ -47,7 +47,15 @@ func parseArguments(from args: [String]) -> (matrix: [[Int]], source: Int, desti
         return nil
     }
 
-    return (flat.chunked(into: n), source, destination)
+    let matrix = flat.chunked(into: n)
+
+    for row in matrix {
+        if row.contains(where: { $0 < 0 }) {
+            return nil
+        }
+    }
+
+    return (matrix, source, destination)
 }
 
 func shortestPath(matrix: [[Int]], from source: Int, to destination: Int) -> Int? {
