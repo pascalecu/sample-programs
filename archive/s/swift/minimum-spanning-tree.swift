@@ -8,7 +8,7 @@ extension StringProtocol {
 
 func parseMatrix(_ input: String?) -> [[Int]]? {
     guard
-        let input,
+        let input = input,
         !input.isEmpty
     else { return nil }
 
