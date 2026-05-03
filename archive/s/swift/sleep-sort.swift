@@ -36,8 +36,8 @@ func sleepSorted(_ numbers: [Int]) -> [Int] {
     for number in numbers {
         group.enter()
         queue.async {
-            let delay = UInt32(number + offset)
-            sleep(delay)
+            let delay = UInt32((number + offset) * 500_000)
+            usleep(delay)
 
             lock.lock()
             result.append(number)
