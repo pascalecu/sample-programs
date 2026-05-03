@@ -7,7 +7,7 @@ extension StringProtocol {
 }
 
 func parseInt(_ s: String?) -> Int? {
-    guard let s else { return nil }
+    guard let s = s else { return nil }
     return Int(s.trimmed)
 }
 
