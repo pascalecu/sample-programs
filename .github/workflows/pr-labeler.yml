@@ -1,49 +1,51 @@
-name: "Pull Request Labeler"
+name: Pull Request Labeler
 
 on:
   pull_request_target:
-    types:
-      - opened
-      - synchronize
+    types: [opened, synchronize]
 
 jobs:
   labeler:
+    name: Apply PR Labels
+
     permissions:
       contents: read
-      issues: write
       pull-requests: write
+      issues: write
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
-      - name: Read repo config
+      - name: Load repo config
+        id: config
         uses: pietrobolcato/action-read-yaml@1.1.0
-        id: repo-config
         with:
           config: repo-config.yml
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "${{ steps.repo-config.outputs['python-version'] }}"
+          python-version: "${{ steps.config.outputs['python-version'] }}"
 
-      - name: Run Poetry Image
+      - name: Setup Poetry
         uses: abatilo/actions-poetry@v4
         with:
-          poetry-version: "${{ steps.repo-config.outputs['poetry-version'] }}"
+          poetry-version: "${{ steps.config.outputs['poetry-version'] }}"
 
-      - name: Install Dependencies
-        run: poetry install
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
-      - name: Create labels
+      - name: Generate label configuration
         run: poetry run python scripts/set_up_labeler.py
 
-      - name: Show labeler config
-        run: cat .github/labeler.yml
+      - name: Validate label config
+        run: test -f .github/labeler.yml
 
-      - uses: actions/labeler@v6
+      - name: Apply labels
+        uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true
