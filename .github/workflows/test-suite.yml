@@ -1,4 +1,4 @@
-# This workflow will install Python dependencies, download Docker images, and test every script in the repo
+# This workflow installs dependencies, pulls Docker images, and runs all tests
 
 name: Glotter
 
@@ -8,7 +8,7 @@ permissions:
 on:
   push:
     branches: [main]
-    paths:
+    paths: &watch_paths
       - "archive/**"
       - ".glotter.yml"
       - "repo-config.yml"
@@ -17,29 +17,30 @@ on:
       - "poetry.lock"
       - "scripts/run_tests.py"
       - "!**/*.md"
+
   pull_request:
-    branches:
-      - "main"
+    branches: [main]
   schedule:
     # Run every Wednesday at 10:39 UTC (randomly chosen)
     - cron: "39 10 * * 3"
 
 jobs:
-  # We need this job to check if changed files should trigger testing
+  # Detect changed files
   changed-files:
-    name: "Changed Files"
+    name: Changed Files
     runs-on: ubuntu-latest
 
     outputs:
-      status: ${{ steps.changed-files.outputs.exists }}
-      changed_files: ${{ steps.changed-files.outputs.files }}
+      should_run: ${{ steps.detect.outputs.exists }}
+      files: ${{ steps.detect.outputs.files }}
+
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
-      - name: Get changed code files
-        id: changed-files
+      - name: Detect changes
+        id: detect
         uses: yumemi-inc/changed-files@v3
         with:
           patterns: |
@@ -52,24 +53,23 @@ jobs:
             scripts/run_tests.py
             !**/*.md
 
-      - name: List all relevant changed files
-        if: steps.changed-files.outputs.exists == 'true'
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.files }}
+      - name: Show changed files
+        if: steps.detect.outputs.exists == 'true'
         run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
-          done
+          echo "Changed files:"
+          printf '%s\n' ${{ steps.detect.outputs.files }}
 
-  # We need this job to test all code in the codebase
+  # Run tests
   testing:
     name: "Test Suite"
     needs: changed-files
-    if:
-      ${{needs.changed-files.outputs.status == 'true' || github.event_name ==
-      'schedule' }}
+
+    if: >
+      needs.changed-files.outputs.should_run == 'true' || github.event_name ==
+      'schedule'
 
     runs-on: ubuntu-latest
+
     steps:
       - name: Maximize build space
         uses: AdityaGarg8/remove-unwanted-software@v5
@@ -84,21 +84,21 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Read repo config
+      - name: Load repo config
+        id: config
         uses: pietrobolcato/action-read-yaml@1.1.0
-        id: repo-config
         with:
           config: repo-config.yml
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "${{ steps.repo-config.outputs['python-version'] }}"
+          python-version: ${{ steps.config.outputs['python-version'] }}
 
-      - name: Run Poetry Image
+      - name: Setup Poetry
         uses: abatilo/actions-poetry@v4
         with:
-          poetry-version: "${{ steps.repo-config.outputs['poetry-version'] }}"
+          poetry-version: ${{ steps.config.outputs['poetry-version'] }}
 
       - name: Install Dependencies
         run: poetry install
@@ -106,26 +106,29 @@ jobs:
       - name: Check for Bad Files
         run: poetry run glotter check
 
-      - name:
-          Download Docker images, Test Appropriate Sample Programs, Remove
-          Docker Images
-        run:
-          poetry run python scripts/run_tests.py --event ${{ github.event_name
-          }} --num-batches ${{ steps.repo-config.outputs['num-batches'] }}
-          --parallel --remove ${{ needs.changed-files.outputs.changed_files }}
+      - name: Run test suite
+        run: |
+          poetry run python scripts/run_tests.py \
+            --event "${{ github.event_name }}" \
+            --num-batches "${{ steps.config.outputs['num-batches'] }}" \
+            --parallel \
+            --remove "${{ needs.changed-files.outputs.files }}"
 
   # Because testing uses a matrix, we need this job for branch protections
   test-results:
     name: Test Results
     needs: testing
     runs-on: ubuntu-latest
-    if: ${{ always() }}
+    if: always()
 
     steps:
-      - run: |
-          result="${{ needs.testing.result }}"
-          if [[ $result == "success" || $result == "skipped" ]]; then
-            exit 0
-          else
-            exit 1
-          fi
+      - name: Validate outcome
+        run: |
+          case "${{ needs.testing.result }}" in
+            success|skipped)
+              exit 0
+              ;;
+            *)
+              exit 1
+              ;;
+          esac
