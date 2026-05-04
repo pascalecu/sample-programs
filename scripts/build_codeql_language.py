@@ -44,7 +44,9 @@ def get_test_info_struct(language: str) -> TestInfoStruct:
     with path.open() as f:
         testinfo = yaml.safe_load(f)
 
-    return TestInfoStruct(path=path, language=language, build=testinfo["container"]["build"])
+    return TestInfoStruct(
+        path=path, language=language, build=testinfo["container"]["build"]
+    )
 
 
 def get_build_command(testinfo_struct: TestInfoStruct, path: Path) -> str:

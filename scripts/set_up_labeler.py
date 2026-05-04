@@ -18,14 +18,18 @@ LABELER_CONFIG_PATH = Path(".github/labeler.yml")
 def main():
     projects = read_projects()
     config = get_labeler_config(projects)
-    LABELER_CONFIG_PATH.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+    LABELER_CONFIG_PATH.write_text(
+        yaml.safe_dump(config, sort_keys=False), encoding="utf-8"
+    )
 
 
 def read_projects() -> list[str]:
     with GLOTTER_PATH.open(encoding="utf-8") as f:
         contents = yaml.safe_load(f)
 
-    return sorted(" ".join(project["words"]) for project in contents["projects"].values())
+    return sorted(
+        " ".join(project["words"]) for project in contents["projects"].values()
+    )
 
 
 def get_labeler_config(projects: list[str]) -> dict[str, Any]:
@@ -44,7 +48,11 @@ def get_labeler_config(projects: list[str]) -> dict[str, Any]:
         "needs docs": [
             {
                 "all": [
-                    {"changed-files": [{"any-glob-to-any-file": ["README.md", ".github/*.md"]}]},
+                    {
+                        "changed-files": [
+                            {"any-glob-to-any-file": ["README.md", ".github/*.md"]}
+                        ]
+                    },
                     {"base-branch": "main"},
                 ]
             }
@@ -53,7 +61,11 @@ def get_labeler_config(projects: list[str]) -> dict[str, Any]:
         "tests": [
             {
                 "all": [
-                    {"changed-files": [{"any-glob-to-any-file": ["archive/*/*/testinfo.yml"]}]},
+                    {
+                        "changed-files": [
+                            {"any-glob-to-any-file": ["archive/*/*/testinfo.yml"]}
+                        ]
+                    },
                     {"base-branch": "main"},
                 ]
             },
@@ -64,7 +76,10 @@ def get_labeler_config(projects: list[str]) -> dict[str, Any]:
     for project in projects:
         # Project-specific language files (with all possible variations)
         filenames = sorted(
-            set(func(project.split()) for func in [camel_case, underscore, hyphen, pascal_case])
+            set(
+                func(project.split())
+                for func in [camel_case, underscore, hyphen, pascal_case]
+            )
         )
         config[project] = [
             {
@@ -73,7 +88,8 @@ def get_labeler_config(projects: list[str]) -> dict[str, Any]:
                         "changed-files": [
                             {
                                 "any-glob-to-any-file": [
-                                    f"archive/*/*/{filename}.*" for filename in filenames
+                                    f"archive/*/*/{filename}.*"
+                                    for filename in filenames
                                 ]
                             }
                         ]

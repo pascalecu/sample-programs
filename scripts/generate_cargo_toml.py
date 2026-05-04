@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 CARGO_TOML = """\
 [package]
 name = "sample-programs"

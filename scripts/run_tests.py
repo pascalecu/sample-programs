@@ -43,13 +43,18 @@ def should_run_languages(paths_changed: Set[Path]) -> bool:
     return any(path.name == "testinfo.yml" for path in paths_changed)
 
 
-def run_languages(paths_changed: Set[Path], parsed_args: argparse.Namespace) -> NoReturn:
+def run_languages(
+    paths_changed: Set[Path], parsed_args: argparse.Namespace
+) -> NoReturn:
     languages = _get_languages(paths_changed)
     print(f"=== Running tests for {', '.join(languages)} ===\n", flush=True)
     exit_code = 0
     for language_set in _do_batches(languages, parsed_args):
         test_args = argparse.Namespace(
-            source=None, project=None, language=language_set, parallel=parsed_args.parallel
+            source=None,
+            project=None,
+            language=language_set,
+            parallel=parsed_args.parallel,
         )
         try:
             test(test_args)
@@ -63,7 +68,9 @@ def should_run_sample_programs(paths_changed: Set[Path]) -> bool:
     return any(path.name != "README.md" for path in paths_changed)
 
 
-def run_sample_programs(paths_changed: Set[Path], parsed_args: argparse.Namespace) -> NoReturn:
+def run_sample_programs(
+    paths_changed: Set[Path], parsed_args: argparse.Namespace
+) -> NoReturn:
     print(
         f"=== Running tests for {', '.join(sorted(str(path) for path in paths_changed))} ===\n",
         flush=True,
@@ -91,7 +98,10 @@ def run_sample_programs(paths_changed: Set[Path], parsed_args: argparse.Namespac
         for language, projects in sample_programs.items():
             for project in projects:
                 test_args = argparse.Namespace(
-                    source=None, project=project, language=language, parallel=parsed_args.parallel
+                    source=None,
+                    project=project,
+                    language=language,
+                    parallel=parsed_args.parallel,
                 )
                 try:
                     test(test_args)
@@ -126,7 +136,9 @@ def _do_batches(
             project=None,
             language=set(
                 languages[
-                    (n * num_languages // num_batches) : ((n + 1) * num_languages // num_batches)
+                    (n * num_languages // num_batches) : (
+                        (n + 1) * num_languages // num_batches
+                    )
                 ]
             ),
             parallel=parsed_args.parallel,
@@ -152,10 +164,16 @@ def _display_batch(prefix, n, num_batches) -> None:
 def main() -> NoReturn:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", help="GitHub event")
-    parser.add_argument("--num-batches", type=int, help="number of glotter batches", required=True)
-    parser.add_argument("--parallel", action="store_true", help="run glotter in parallel")
     parser.add_argument(
-        "--remove", action="store_true", help="remove docker images after each batch is finished"
+        "--num-batches", type=int, help="number of glotter batches", required=True
+    )
+    parser.add_argument(
+        "--parallel", action="store_true", help="run glotter in parallel"
+    )
+    parser.add_argument(
+        "--remove",
+        action="store_true",
+        help="remove docker images after each batch is finished",
     )
     parser.add_argument("files_changed", nargs="*", help="files that have changed")
     parsed_args = parser.parse_args()
