@@ -66,8 +66,8 @@ jobs:
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.files }}
         run: |
-          for file in ${ALL_CHANGED_FILES}; do
-            echo "$file was changed"
+          printf '%s\n' "$ALL_CHANGED_FILES" | while IFS= read -r file; do
+            [ -n "$file" ] && echo "$file was changed"
           done
 
       # Reference: https://stackoverflow.com/questions/65384420/how-do-i-make-a-github-action-matrix-element-conditional
