@@ -21,6 +21,10 @@ jobs:
   readme:
     name: Generate READMEs
     runs-on: ubuntu-latest
+    # Prevent concurrent runs from clobbering the same branch
+    concurrency:
+      group: readme-gen-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
       # Auth
@@ -47,6 +51,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ steps.config.outputs['python-version'] }}
+          cache: 'poetry'
 
       - name: Setup Poetry
         uses: abatilo/actions-poetry@v4
