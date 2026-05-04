@@ -1,34 +1,49 @@
 name: Documentation
 
-permissions:
-  contents: read
-  actions: write
-
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "archive/**"
       - "test/**"
       - ".glotter.yml"
       - ".github/workflows/docs.yml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  trigger_workflow:
-    name: Docs Generation & Deployment
+  trigger-docs:
+    name: Trigger Documentation Deployment
     runs-on: ubuntu-latest
+    env:
+      TARGET_OWNER: "TheRenegadeCoder"
+      TARGET_REPO: "sample-programs-website"
+      TARGET_WORKFLOW: "main.yml"
 
     steps:
-      - name: Workflow Trigger
+      - name: Dispatch documentation workflow
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.PAT }}
           script: |
-            const result = await github.rest.actions.createWorkflowDispatch({
-              owner: 'TheRenegadeCoder',
-              repo: 'sample-programs-website',
-              workflow_id: 'main.yml',
-              ref: 'main'
-            })
-            console.log(result)
+            const { TARGET_OWNER, TARGET_REPO, TARGET_WORKFLOW } = process.env;
+
+            try {
+              console.log(`Dispatching ${TARGET_WORKFLOW} in ${TARGET_OWNER}/${TARGET_REPO}...`);
+              
+              await github.rest.actions.createWorkflowDispatch({
+                owner: TARGET_OWNER,
+                repo: TARGET_REPO,
+                workflow_id: TARGET_WORKFLOW,
+                ref: "main"
+              });
+
+              console.log("Successfully dispatched documentation deployment.");
+            } catch (error) {
+              core.setFailed(`Workflow dispatch failed: ${error.message}`);
+            }
