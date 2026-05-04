@@ -8,8 +8,7 @@ permissions:
 
 on:
   push:
-    branches:
-      - "main"
+    branches: [main]
     paths:
       - "archive/**"
       - ".glotter.yml"
@@ -20,42 +19,50 @@ on:
 
 jobs:
   readme:
-    name: "README Generation"
-
+    name: Generate READMEs
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/create-github-app-token@v2
-        id: generate-token
+      # Auth
+      - name: Generate GitHub app token
+        id: token
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.README_BOT_APP_ID }}
           private-key: ${{ secrets.README_BOT_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.token.outputs.token }}
 
-      - name: Read repo config
+      # Config
+      - name: Load repo config
+        id: config
         uses: pietrobolcato/action-read-yaml@1.1.0
-        id: repo-config
         with:
           config: repo-config.yml
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "${{ steps.repo-config.outputs['python-version'] }}"
+          python-version: ${{ steps.config.outputs['python-version'] }}
 
-      - name: Run Poetry Image
+      - name: Setup Poetry
         uses: abatilo/actions-poetry@v4
         with:
-          poetry-version: "${{ steps.repo-config.outputs['poetry-version'] }}"
+          poetry-version: ${{ steps.config.outputs['poetry-version'] }}
 
-      - name: Install Dependencies
-        run: poetry install
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
+      # Generate docs
       - name: Generate READMEs
         run: poetry run ronbun . --log=INFO
 
-      - name: Create Pull Request
-        id: cpr
+      # Create PR
+      - name: Create pull request
+        id: pr
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: Regenerated READMEs
@@ -66,12 +73,12 @@ jobs:
           delete-branch: true
           title: "[Automated Workflow] Add/Modify READMEs"
           labels: enhancement
-          token: ${{ steps.generate-token.outputs.token }}
+          token: ${{ steps.token.outputs.token }}
 
-      - name: Enable Pull Request Automerge
-        if: steps.cpr.outputs.pull-request-operation == 'created'
+      - name: Enable PR automerge
+        if: steps.pr.outputs.pull-request-operation == 'created'
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          pull-request-number: ${{ steps.pr.outputs.pull-request-number }}
           merge-method: squash
-          token: ${{ steps.generate-token.outputs.token }}
+          token: ${{ steps.token.outputs.token }}
