@@ -40,122 +40,116 @@ on:
     paths: *code_paths
 
   schedule:
-    # Run every Thursday at 4:53 UTC (randomly chosen)
+    # Run every Saturday at 4:53 UTC (randomly chosen)
     - cron: "53 4 * * 6"
 
 jobs:
   # We need this job to check if changed files should trigger analysis
   changed-files:
-    name: "Changed Files"
+    name: Detect Changes
     runs-on: ubuntu-latest
 
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      changed-files: ${{ steps.changed-files.outputs.files }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
-      - name: Get changed code files
-        id: changed-files
+      - name: Get changed files
+        id: diff
         uses: yumemi-inc/changed-files@v3
 
-      - name: List all relevant changed files
-        if: steps.changed-files.outputs.exists == 'true'
+      - name: Build CodeQL matrix
+        id: matrix
         env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.files }}
+          CHANGED_FILES: ${{ steps.diff.outputs.files }}
         run: |
-          printf '%s\n' "$ALL_CHANGED_FILES" | while IFS= read -r file; do
-            [ -n "$file" ] && echo "$file was changed"
-          done
+          RESULT=$(python3 scripts/get_codeql_languages.py \
+            --event "${{ github.event_name }}" \
+            ${{ steps.diff.outputs.files }})
 
-      # Reference: https://stackoverflow.com/questions/65384420/how-do-i-make-a-github-action-matrix-element-conditional
-      - name: Get CodeQL Languages
-        id: set-matrix
-        run: |
-          matrix=$(python scripts/get_codeql_languages.py --event ${{ github.event_name}} ${{ steps.changed-files.outputs.files }})
-          echo "${matrix}"
-          echo "matrix={\"include\": ${matrix}}" >> $GITHUB_OUTPUT
+          if [ -z "$RESULT" ] || [ "$RESULT" = "[]" ]; then
+            echo "matrix={\"include\": []}" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "matrix={\"include\": $RESULT}" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
 
   analyze:
-    name: Analyze
+    name: Analyze (${{ matrix.language }})
     needs: changed-files
+    if: needs.changed-files.outputs.has_changes == 'true'
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.changed-files.outputs.matrix) }}
+
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        ${{ fromJson(needs.changed-files.outputs.matrix) }}
-        # Learn more:
-        # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
-
-    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
-      - name: Read repo config
+      - name: Load repo config
+        id: config
         uses: pietrobolcato/action-read-yaml@1.1.0
-        id: repo-config
         with:
           config: repo-config.yml
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "${{ steps.repo-config.outputs['python-version'] }}"
+          python-version: ${{ steps.config.outputs['python-version'] }}
+          cache: "poetry"
 
-      - name: Run Poetry Image
+      - name: Setup Poetry
         uses: abatilo/actions-poetry@v4
         with:
-          poetry-version: "${{ steps.repo-config.outputs['poetry-version'] }}"
+          poetry-version: ${{ steps.config.outputs['poetry-version'] }}
 
-      - name: Install Dependencies
-        run: poetry install
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
-      # Workaround for Kotlin scanning.
-      - name: Set up Kotlin
-        if: ${{ matrix.language == 'kotlin' }}
-        run: sudo snap install kotlin --classic --channel=2.2/stable
+      - name: Setup Kotlin
+        if: matrix.language == 'kotlin'
+        run: |
+          if ! command -v kotlinc &> /dev/null; then
+            sudo snap install kotlin --classic --channel=2.2/stable
+          fi
 
-      # Set up Rust for scanning.
-      - name: Set up Rust
-        if: ${{ matrix.language == 'rust' }}
+      - name: Setup Rust
+        if: matrix.language == 'rust'
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           python3 scripts/generate_cargo_toml.py
 
-      # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
-      # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-      # If this step fails, then you should remove it and run the build manually (see below)
       - name: Autobuild
-        if: ${{ matrix.build-mode != 'manual' }}
+        if: matrix.build-mode != 'manual'
         uses: github/codeql-action/autobuild@v4
 
-      # ℹ️ Command-line programs to run using the OS shell.
-      # 📚 https://git.io/JvXDl
-
-      # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-      #    and modify them (or add more) to build your code if your project
-      #    uses a compiled language
-
       - name: Manual build
-        if: ${{ matrix.build-mode == 'manual' }}
-        run:
-          poetry run python scripts/build_codeql_language.py ${{ matrix.language
-          }} ${{ matrix.paths }}
+        if: matrix.build-mode == 'manual'
+        run: |
+          poetry run python scripts/build_codeql_language.py \
+            "${{ matrix.language }}" \
+            "${{ matrix.paths }}"
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
